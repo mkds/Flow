@@ -1,0 +1,10 @@
+Package: flow
+Type: Package
+Title: Data Science Workflow in R
+Version: 0.1.0
+Author: Mohan Kandaraj
+Maintainer: Mohan Kandaraj
+Description: 
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
