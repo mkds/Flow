@@ -1,68 +1,58 @@
 
-
-#workflow1 <- Flow$new(steps=list("getdata"=get_data,"cleanup"=clean_up,
-#                                 "getFeatures"=get_feature,"model"=lm,
-#                                 "modelAnalysis"=analyze_model,"predict"=predict,
-#                                 "modelPerformance"=evaluate_prediction))
 Flow <- setRefClass("Flow",fields = list(steps="list"))
 
 
-init <- function(steps){
-  i <- 1
-  step_names=names(steps)
+Flow$methods(initialize = function(steps){
   for (st in steps) {
-    steps[[step_names[i]]] <<- list(funcs=st,output=NULL,stats=NULL,params=formals(st@run))
-    i <- i + 1
-
+    steps[[st$step_name]] <<- st
   }
-}
-
-Flow$methods(initialize=init)
+})
 
 
 
-prn=function(){
+Flow$methods(show=function(){
   cat("Start")
   for (st in names(steps))
     cat(" ----> ",st)
   cat(" ----> ","End")
-}
+})
 
-Flow$methods(show=prn)
+
 
 #fl=Flow$new(steps=list(lr=lr,glr=glr))
 
-
-
-paramToList=function(plist,stepname){
-  nm = names(plist)
-  if (!is.null(plist[["data"]]))
-    plist[["data"]]=NULL
-  params = as.character(plist)
-  param_df=data.frame(Step=stepname,Param=names(plist),values=params,stringsAsFactors=F)
-  param_df
-
-}
-
-all_params <- function(){
-  all_steps <- names(steps)
-  params=NULL
-  for(st in all_steps){
-    params <- rbind(params,paramToList(steps[[st]]$params,st))
+Flow$methods(get_all_params=function(){
+  all_param_df=NULL
+  for (st in steps){
+    params_list <- st$params
+    if (!is.null(params_list[["data"]]))
+      params_list[["data"]]=NULL
+    if (length(params_list > 0)){
+      params_chars = as.character(params_list)
+      params_df=data.frame(Step=st$step_name, Parameter=names(params_list),
+                           values=params_chars, stringsAsFactors=F)
+      all_param_df=rbind(all_param_df,params_df)
+    }
   }
-  return(params)
-}
-
-Flow$methods(all_params=all_params)
+  return(all_param_df)
+})
 
 
-
-save_params=function(filename){
-
-  write.csv(.self$all_params(),filename,row.names = F)
-}
-
-Flow$methods(save_params=save_params)
+Flow$methods(save_all_params = function(file_name){
+  all_param_df=.self$get_all_params()
+  write.csv(all_params_df,file_name,row.names = F)
+})
 
 
 #eval(parse(text="list(a=1)"))
+Flow$methods(run_all=function(){
+  #Run all steps
+  for (i in (1:length(steps))){
+    if (i > 1){
+      steps[[names(steps)[i]]]$params$data <<- steps[[names(steps)[i-1]]]$output$result
+    }
+    steps[[names(steps)[i]]]$run()
+  }
+
+})
+
